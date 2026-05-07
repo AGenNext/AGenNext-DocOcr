@@ -1,0 +1,41 @@
+{
+  "name": "@agnext/dococr",
+  "version": "1.0.0",
+  "description": "Document OCR solution powered by LiteParse",
+  "main": "lib/index.js",
+  "type": "module",
+  "bin": {
+    "dococr": "bin/cli.js"
+  },
+  "scripts": {
+    "parse": "lit parse",
+    "batch": "lit batch-parse",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ocr",
+    "document",
+    "pdf",
+    "liteparse",
+    "llamaindex",
+    "invoice",
+    "contract",
+    "identity",
+    "verification"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@llamaindex/liteparse": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./invoice": "./lib/invoice.js",
+    "./contract": "./lib/contract.js",
+    "./identity": "./lib/identity.js",
+    "./document": "./lib/document.js"
+  }
+}

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocOCR - Document Parser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --bg-secondary: #16161a;
+      --bg-tertiary: #1e1e24;
+      --accent: #00e5a0;
+      --accent-dim: rgba(0, 229, 160, 0.15);
+      --text: #fafafa;
+      --text-secondary: #a0a0a8;
+      --border: #2a2a32;
+      --error: #ff5757;
+      --success: #00e5a0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .logo span { color: var(--accent); }
+
+    /* Upload Section */
+    .upload-section {
+      background: var(--bg-secondary);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 4rem 2rem;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+
+    .upload-section:hover, .upload-section.dragover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .upload-section input {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .upload-section h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-section p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Document Type Selector */
+    .doc-type-selector {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 2rem 0;
+    }
+
+    .doc-type-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .doc-type-btn:hover {
+      border-color: var(--text-secondary);
+    }
+
+    .doc-type-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Results */
+    .results-section {
+      margin-top: 3rem;
+      display: none;
+    }
+
+    .results-section.visible {
+      display: block;
+    }
+
+    .result-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-type-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+    }
+
+    .result-body {
+      padding: 1.5rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .result-field {
+      display: flex;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+    }
+
+    .field-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      min-width: 100px;
+      text-transform: uppercase;
+    }
+
+    .field-value {
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    /* Raw Text */
+    .raw-text-section {
+      margin-top: 1.5rem;
+    }
+
+    .raw-text-section h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .raw-text {
+      background: var(--bg-tertiary);
+      padding: 1rem;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Status */
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+
+    .status.loading {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    .status.error {
+      background: rgba(255, 87, 87, 0.1);
+      color: var(--error);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: 4rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo"><span>◈</span> DocOCR</div>
+    </header>
+
+    <main>
+      <div class="upload-section" id="dropzone">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.pptx,.png,.jpg,.jpeg">
+        <div class="upload-icon">📄</div>
+        <h2>Drop your document here</h2>
+        <p>or click to browse • PDF, DOCX, XLSX, Images</p>
+      </div>
+
+      <div class="doc-type-selector">
+        <button class="doc-type-btn active" data-type="auto">Auto Detect</button>
+        <button class="doc-type-btn" data-type="invoice">Invoice</button>
+        <button class="doc-type-btn" data-type="contract">Contract</button>
+        <button class="doc-type-btn" data-type="identity">Identity</button>
+        <button class="doc-type-btn" data-type="receipt">Receipt</button>
+        <button class="doc-type-btn" data-type="medical">Medical</button>
+        <button class="doc-type-btn" data-type="bankstatement">Bank Statement</button>
+        <button class="doc-type-btn" data-type="license">License Plate</button>
+      </div>
+
+      <div class="status loading" id="status" style="display: none;">
+        <div class="spinner"></div>
+        <span>Parsing document...</span>
+      </div>
+
+      <section class="results-section" id="results">
+        <div class="result-card">
+          <div class="result-header">
+            <span>Parsed Result</span>
+            <span class="doc-type-tag" id="detectedType">-</span>
+          </div>
+          <div class="result-body" id="resultFields"></div>
+        </div>
+
+        <div class="raw-text-section">
+          <h3>Raw Text</h3>
+          <div class="raw-text" id="rawText"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Powered by LiteParse • Built by AGenNext
+    </footer>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const docTypeBtns = document.querySelectorAll('.doc-type-btn');
+    const status = document.getElementById('status');
+    const resultsSection = document.getElementById('results');
+    const resultFields = document.getElementById('resultFields');
+    const rawTextEl = document.getElementById('rawText');
+    const detectedTypeEl = document.getElementById('detectedType');
+
+    let selectedType = 'auto';
+
+    // Click to upload
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    // Document type selection
+    docTypeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        docTypeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedType = btn.dataset.type;
+      });
+    });
+
+    async function handleFile(file) {
+      status.style.display = 'flex';
+      resultsSection.classList.remove('visible');
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', selectedType);
+
+      try {
+        const res = await fetch('/api/parse', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        displayResults(data);
+      } catch (error) {
+        status.className = 'status error';
+        status.innerHTML = `<span>Error: ${error.message}</span>`;
+      }
+    }
+
+    function displayResults(data) {
+      status.style.display = 'none';
+      resultsSection.classList.add('visible');
+      detectedTypeEl.textContent = data.type.toUpperCase();
+
+      // Display fields
+      const fields = flattenObject(data.data);
+      resultFields.innerHTML = fields.map(([key, value]) => `
+        <div class="result-field">
+          <span class="field-label">${key}</span>
+          <span class="field-value">${value || '-'}</span>
+        </div>
+      `).join('');
+
+      // Display raw text
+      rawTextEl.textContent = data.rawText || '';
+    }
+
+    function flattenObject(obj, prefix = '') {
+      const result = [];
+      for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          result.push(...flattenObject(value, key));
+        } else if (Array.isArray(value)) {
+          result.push([key, `${value.length} items`]);
+        } else if (value !== undefined && value !== null) {
+          result.push([key, String(value)]);
+        }
+      }
+      return result;
+    }
+  </script>
+</body>
+</html>
